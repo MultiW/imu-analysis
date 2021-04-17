@@ -3,19 +3,18 @@
 Operating system requirements: Mac, Linux, and Windows (WSL 2 only)
 
 1. Clone the repository
-2. Change directory to ```app```
-3. Install dependencies:
+2. Install dependencies:
 ```bash
 ./script/bootstrap
 ```
-4. Restart your command prompt.
+3. Restart your command prompt.
 
 ## IDE
 We use Visual Studio Code (VS Code) for development.
 
 ### Model
 
-Navigate to the ```app/model``` folder.
+Navigate to the ```model``` folder.
 
 Unpack the data into the ```data/``` folder. This data was not included in the repository because it is proprietary data belonging to CSI Pacific.
 
@@ -44,7 +43,7 @@ Open the folder ```model``` in VS Code. (Only open VS Code in this folder when w
 Edit the ```model/.vscode/settings.json``` file as follows:
 ```json
 {
-    "python.autoComplete.extraPaths": ["<path to repo root>/app/model/src"],
+    "python.autoComplete.extraPaths": ["<path to repo root>/model/src"],
     "python.pythonPath": "<path to user home directory>/miniconda3/envs/model-env/bin/python",
     "jupyter.jupyterServerType": "local",
 }
