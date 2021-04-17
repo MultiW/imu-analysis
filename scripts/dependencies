@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+# === Helper Functions ===
+
+exists() {
+  # Check if command exists
+  # $1 command
+  command -v $1 > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+install() {
+  # Install if not exists
+  # $1 executable - condition to install
+  # $2 installation command
+  $1
+  if [ $? -eq 0 ]; then
+    echo "Already installed"
+  else
+    $2
+  fi
+}
+
+check_python_install() {
+  # Check that python command exists and is
+  if exists python3 
+  then
+    if [ "$(python3 -c 'import sys; print(sys.version_info[0])')" == "3" ]; then
+      return 0
+    else
+      return 1
+    fi
+  fi
+
+  if exists python
+  then
+    if [ "$(python -c 'import sys; print(sys.version_info[0])')" == "3" ]; then
+      return 0
+    else
+      return 1
+    fi
+  fi
+
+  return 1
+}
+
+install_homebrew() {
+  if [ "$(uname)" == "Darwin" ]; then
+    echo "Installing Homebrew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+}
+
+install_python() {
+  # Install brew for Mac. Does nothing if not Mac
+  install "brew" "install_homebrew"
+
+  echo "Installing Python"
+  if [ "$(uname)" == "Darwin" ]; then
+    brew install python3
+  else
+    sudo apt-get update
+    sudo apt-get install python3.9
+  fi
+}
+
+install_node() {
+  echo "Installing Node"
+  if [ "$(uname)" == "Darwin" ]; then
+    brew install node
+  else
+    sudo apt-get update
+    sudo apt-get install nodejs
+  fi
+}
+
+install_wget() {
+  echo "Installing wget"
+  if [ "$(uname)" == "Darwin" ]; then
+    brew install wget
+  else
+    sudo apt-get update
+    sudo apt-get install wget
+  fi
+}
+
+install_miniconda() {
+  mkdir -p ~/miniconda3
+  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+  bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+  rm -rf ~/miniconda3/miniconda.sh
+  ~/miniconda3/bin/conda init bash
+  ~/miniconda3/bin/conda config --set auto_activate_base false
+}
+
+# === Script Start ===
+echo "Install Python 3"
+install check_python_install install_python
+
+echo ""
+echo "Install Wget"
+install "exists wget" install_wget
+
+echo ""
+echo "Install Miniconda"
+install "exists conda" install_miniconda

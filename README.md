@@ -8,3 +8,6 @@ In cross-country ski training, wearable [IMU sensors](https://en.wikipedia.org/w
 
 
 TODO: Image of full IMU data with workout data labeled. Image of workout data with steps labeled.
+
+## Development Environment Setup
+See [here](./development_environment_setup.md) for instructions to set up the development environment locally.
