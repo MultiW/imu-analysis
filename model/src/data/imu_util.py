@@ -8,8 +8,8 @@ import os
 import copy
 from collections import Counter
 
-from config import RAW_DIR, RAW_BOOT_FILE, RAW_POLE_FILE, MAX_SAMPLING_INTERVAL_RANGE
-from data_processing.data_util import shift, low_pass_filter
+from src.config import RAW_DIR, RAW_BOOT_FILE, RAW_POLE_FILE, MAX_SAMPLING_INTERVAL_RANGE
+from src.data.data_util import shift, low_pass_filter
 
 # import data types
 from pandas import DataFrame
@@ -170,7 +170,7 @@ def fix_epoch(imu_data: ndarray) -> ndarray:
     intervals = np.diff(imu_data[:, ImuCol.TIME])
 
     common_intervals = _get_common_intervals(imu_data)
-    bad_intervals = np.where((intervals <= 0) | np.isin(intervals, common_intervals))[0]
+    bad_intervals = np.where(~np.isin(intervals, common_intervals))[0]
 
     new_imu_data = copy.deepcopy(imu_data)
     if bad_intervals.shape[0] != 0:

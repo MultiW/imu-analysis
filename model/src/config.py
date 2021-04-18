@@ -12,7 +12,7 @@ RAW_BOOT_FILE = RAW_DIR / 'pole3MT_20210201.csv'
 
 # Clean data paths
 CLEAN_DIR = DATA_DIR / 'clean'
-CLEAN_SUFFIX = '_clean'
+CLEAN_SUFFIX = '_clean.npy'
 
 # Model Paths
 ML_MODELS_DIR = MODEL_DIR / 'models'

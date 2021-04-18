@@ -7,7 +7,7 @@ from pandas import DataFrame
 from numpy import ndarray
 from typing import List, Tuple
 
-from data_processing.enums import Activity
+from src.data.enums import Activity
 
 
 # Steps labels file columns
