@@ -6,14 +6,20 @@ from numpy import ndarray
 from typing import List, Tuple
 
 
-def add_col(labels: ndarray, dtype: any) -> int:
+def add_col(labels: ndarray, dtype: any, expected_col_idx: int = None) -> ndarray:
     """
-    Add new column to the "labels" matrix. 
-    Return the index to the new column
+    Add new column to the ndarray.
+
+    @param expected_col_idx: the location we expect the new column to be in
+    @return: ndarray with new column
+    @raises Exception: if the new column isn't located at expected_col_idx
     """
     num_rows, num_cols = labels.shape
-    np.append(labels, np.empty([num_rows, 1], dtype=dtype), axis=1)
-    return num_cols
+
+    if expected_col_idx and num_cols != expected_col_idx:
+        raise Exception('Column already exists')
+
+    return np.append(labels, np.empty([num_rows, 1], dtype=dtype), axis=1)
 
 
 def find_nearest_index(array: ndarray, value: any):

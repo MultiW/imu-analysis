@@ -26,15 +26,16 @@ We need to clean the raw IMU data and adjust the step labels.
 **1. IMU data cleaning**
 * Fix erroneous timestamps by interpolating from neighbors.
 * Re-sample data uniformly. We want uniform sampling intervals.
-* Normalize acceleration. (We don't use angular velocity or magnetic force for now.)
 * Apply a low-pass filter to smooth data.
 
 **2. Adjusting labels**
 
 Labels point to the raw IMU data's timestamps. We want to point these labels to the cleaned data. Note that the raw data's timestamps have been fixed/interpolated and re-sampled.
 
-**3. Feature selection and training**
-Now we can pre-process the cleaned IMU data into features. This will be used to train our model.
+**3. Pre-processing and training**
+Now we can pre-process the cleaned IMU data by normalizing the acceleration values and generating features. This will be used to train our model.
+
+Note: we don't use angular velocity or magnetic force for now.
 
 ## Using the Model
 From a raw IMU file, the user should identify the workout data. For each workout data chunk, we can label the ski steps.

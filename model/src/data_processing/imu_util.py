@@ -6,17 +6,15 @@ from scipy.interpolate import interp1d
 from enum import Enum
 import os
 import copy
+from collections import Counter
 
-from data_processing.config import IMU_DATA_DIR
+from config import RAW_DIR, RAW_BOOT_FILE, RAW_POLE_FILE, MAX_SAMPLING_INTERVAL_RANGE
 from data_processing.data_util import shift, low_pass_filter
 
 # import data types
 from pandas import DataFrame
 from numpy import ndarray
 from typing import List, Tuple, Optional
-
-
-MAX_SAMPLING_INTERVAL = 1000 # in milliseconds
 
 
 # Raw IMU data column names
@@ -33,6 +31,7 @@ class ImuCol:
     XACCEL = 1
     YACCEL = 2
     ZACCEL = 3
+    KEY = 4 # epoch time from raw IMU data. Raw labels refer to data points using this value
 
 
 class Sensor(Enum):
@@ -48,9 +47,12 @@ def list_imu_abspaths(sensor_name: str = '', sensor_type=Sensor.Any) -> List[str
     Only files satisfying all filter criterias will be returned
     """
     output: List[str] = []
-    for filename in os.listdir(IMU_DATA_DIR):
+    for filename in os.listdir(RAW_DIR):
+        if filename == RAW_BOOT_FILE.name or filename == RAW_POLE_FILE.name:
+            # ignore if label file
+            continue
         if filename.startswith(sensor_name) and sensor_type.value in filename:
-            output.append(IMU_DATA_DIR / filename)
+            output.append(RAW_DIR / filename)
 
     return output
 
@@ -117,7 +119,7 @@ def time_to_row_range(imu_data: ndarray, start_epoch, end_epoch, expected_range=
 
     # == Handle case where there are multiple rows with the same start/end epoch time ==
     # Find sampling interval of IMU data
-    sampling_interval = get_sampling_interval(imu_data)
+    sampling_interval = _get_sampling_interval(imu_data)
     if sampling_interval is None:
         return (None, None)
 
@@ -145,36 +147,40 @@ def time_to_row_range(imu_data: ndarray, start_epoch, end_epoch, expected_range=
     return (None, None)
 
 
-def get_sampling_interval(imu_data: ndarray):
+def _get_common_intervals(imu_data: ndarray) -> List[int]:
+    intervals = np.diff(imu_data[:, ImuCol.TIME])
+    
+    # We cannot have negative time intervals
+    intervals = intervals[(intervals > 0)] 
+
+    common_intervals = Counter(intervals).most_common(MAX_SAMPLING_INTERVAL_RANGE)
+    return [interval for (interval, count) in common_intervals]
+
+
+def _get_sampling_interval(imu_data: ndarray) -> float:
     """
     Get average sampling interval (i.e. average time difference between neighboring points)
     """
-    # Constants
-    max_sampling_interval_range = 5 # in milliseconds
+    common_intervals = _get_common_intervals(imu_data)
 
-    time_diff = np.diff(imu_data[:, ImuCol.TIME])
-    time_diff = time_diff[(time_diff >= 0) & (time_diff <= MAX_SAMPLING_INTERVAL)] # assume sampling rate > 1 per second (per 1000 ms)
-    intervals = np.unique(time_diff)
-    if intervals.max() - intervals.min() > max_sampling_interval_range:
-        # IMU data sampling rate is all over the place
-        return None
-
-    return np.average(time_diff)
+    return sum(common_intervals) / len(common_intervals)
 
 
 def fix_epoch(imu_data: ndarray) -> ndarray:
-    time_diff = np.diff(imu_data[:, ImuCol.TIME])
-    error_idx = np.where((time_diff < 0) | (time_diff > MAX_SAMPLING_INTERVAL))[0] + 1
+    intervals = np.diff(imu_data[:, ImuCol.TIME])
+
+    common_intervals = _get_common_intervals(imu_data)
+    bad_intervals = np.where((intervals <= 0) | np.isin(intervals, common_intervals))[0]
 
     new_imu_data = copy.deepcopy(imu_data)
-    if error_idx.shape[0] != 0:
-        # Replace bad diff values
-        time_diff[np.where((time_diff < 0) | (time_diff > MAX_SAMPLING_INTERVAL))] = get_sampling_interval(imu_data)
+    if bad_intervals.shape[0] != 0:
+        # Fix bad interval values
+        intervals[bad_intervals] = _get_sampling_interval(imu_data)
 
-        # Recompute epoch times based on new diff values
+        # Recompute epoch times based on new interval values
         base_epoch = imu_data[0, ImuCol.TIME]
         new_imu_data[0, ImuCol.TIME] = base_epoch
-        new_imu_data[1:, ImuCol.TIME] = base_epoch + np.cumsum(time_diff)
+        new_imu_data[1:, ImuCol.TIME] = base_epoch + np.cumsum(intervals)
 
     return new_imu_data
 
@@ -204,11 +210,9 @@ def epoch_ms_to_s(imu_data: ndarray) -> ndarray:
     return result
 
 
-def preprocess_imu_data(imu_data: ndarray) -> ndarray:
+def clean_imu_data(imu_data: ndarray) -> ndarray:
     """
     Convert raw IMU data into something displayable for users
-
-    Implementation note: this behavior must match the pre-processing done on the training data before model fitting
     """
     # Fix bad epoch values
     result = fix_epoch(imu_data)
