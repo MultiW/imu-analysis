@@ -6,8 +6,10 @@ import numpy as np
 from pandas import DataFrame
 from numpy import ndarray
 from typing import List, Tuple
+from pathlib import Path
 
-from src.data.enums import Activity
+from src.data.enums import Activity, DataState
+from src.config import RAW_BOOT_FILE, RAW_POLE_FILE, CLEAN_SUFFIX, CLEAN_DIR
 
 
 # Steps labels file columns
@@ -55,7 +57,17 @@ class TestType(Enum):
     PoleNormal = 'normal'
 
 
-def get_labels_data(file: str, labels_type: Activity) -> ndarray:
+def get_labels_file(activity: Activity, data_state: DataState) -> Path:
+    raw_file: Path = RAW_BOOT_FILE if activity == Activity.Boot else RAW_POLE_FILE
+
+    if data_state == DataState.Raw:
+        return raw_file
+    else:
+        file_name: str = '%s%s' % (raw_file.stem, CLEAN_SUFFIX)
+        return CLEAN_DIR / file_name
+
+
+def load_labels(file: str, labels_type: Activity) -> ndarray:
     df: DataFrame = pd.read_csv(file)
     if labels_type == Activity.Boot:
         return df[[

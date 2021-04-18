@@ -8,13 +8,15 @@ import os
 import copy
 from collections import Counter
 
-from src.config import RAW_DIR, RAW_BOOT_FILE, RAW_POLE_FILE, MAX_SAMPLING_INTERVAL_RANGE
+from src.config import RAW_DIR, CLEAN_DIR, RAW_POLE_FILE, RAW_BOOT_FILE, MAX_SAMPLING_INTERVAL_RANGE
 from src.data.data_util import shift, low_pass_filter
+from src.data.enums import DataState
 
 # import data types
 from pandas import DataFrame
 from numpy import ndarray
 from typing import List, Tuple, Optional
+from pathlib import Path
 
 
 # Raw IMU data column names
@@ -41,18 +43,22 @@ class Sensor(Enum):
     Magnetometer = 'Magnetometer'
 
 
-def list_imu_abspaths(sensor_name: str = '', sensor_type=Sensor.Any) -> List[str]:
+def list_imu_abspaths(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, data_state: DataState = DataState.Raw) -> List[str]:
     """
     List the absolute paths of all IMU files
     Only files satisfying all filter criterias will be returned
     """
+    data_dir = RAW_DIR if data_state == DataState.Raw else CLEAN_DIR
+    boot_file_stem = RAW_BOOT_FILE.stem
+    pole_file_stem = RAW_POLE_FILE.stem
+
     output: List[str] = []
-    for filename in os.listdir(RAW_DIR):
-        if filename == RAW_BOOT_FILE.name or filename == RAW_POLE_FILE.name:
+    for filename in os.listdir(data_dir):
+        if filename.startswith(boot_file_stem) or filename.startswith(pole_file_stem):
             # ignore if label file
             continue
         if filename.startswith(sensor_name) and sensor_type.value in filename:
-            output.append(RAW_DIR / filename)
+            output.append(data_dir / filename)
 
     return output
 
