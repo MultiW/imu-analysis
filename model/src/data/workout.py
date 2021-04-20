@@ -9,5 +9,7 @@ class Activity(Enum):
 
 class Workout:
     def __init__(self, labels: ndarray, sensor: str):
+        # labels relevant to this workout
         self.labels: ndarray = labels
+
         self.sensor: str = sensor

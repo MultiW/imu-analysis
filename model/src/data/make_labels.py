@@ -47,6 +47,7 @@ def clean_workout_labels(workout: Workout) -> ndarray:
     
     # Fix labels
     num_steps: int = workout.labels.shape[0]
+    errors_found: int = 0
     for i in range(num_steps):
         # Old tag. Points to raw IMU via epoch time
         start_tag: int = int(workout.labels[i, LabelCol.START])
@@ -56,8 +57,15 @@ def clean_workout_labels(workout: Workout) -> ndarray:
         start_tag: int = to_clean_tag(start_tag, raw_imu, raw_imu_epoch_fixed, clean_imu)
         end_tag: int = to_clean_tag(end_tag, raw_imu, raw_imu_epoch_fixed, clean_imu)
 
+        # Track errors
+        if start_tag is None or end_tag is None:
+            errors_found += 1
+
         clean_labels[i, LabelCol.START] = start_tag
         clean_labels[i, LabelCol.END] = end_tag
+
+    if errors_found > 0:
+        print('Number of labels that could not be mapped for sensor %s: %d' % (workout.sensor, errors_found))
 
     return clean_labels
 
