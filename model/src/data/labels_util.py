@@ -8,7 +8,8 @@ from numpy import ndarray
 from typing import List, Tuple
 from pathlib import Path
 
-from src.data.enums import Activity, DataState
+from src.data.workout import Activity, Workout
+from src.data.data import DataState
 from src.config import RAW_BOOT_FILE, RAW_POLE_FILE, CLEAN_SUFFIX, CLEAN_DIR
 
 
@@ -91,45 +92,27 @@ def load_labels(file: str, labels_type: Activity) -> ndarray:
         ]].to_numpy()
 
 
-def get_workouts_row_bounds(labels: ndarray) -> List[Tuple[int, int]]:
+def get_workouts(labels: ndarray) -> List[Workout]:
     """
     @return: list of tuples (start, end). "start" and "end" are row indexes to "labels". They are the start/end bounds of a test (inclusive)
     """
-    all_tests = []
+    all_workouts: List[Workout] = []
 
-    # Get end times of all ski workouts (except for the last)
+    # Get end rows of all ski workouts (except for the last)
     time_diff = np.diff(labels[:, LabelCol.TIME])
     end_indices = np.where(time_diff < 0)[0] # row numbers
     
     num_tests = len(end_indices) + 1
     for i in range(num_tests):
         if i == 0 and i == num_tests-1:
-            all_tests.append((0, labels.shape[0]-1))
+            start_row, end_row = 0, labels.shape[0]-1
         elif i == 0: # first test
-            all_tests.append((0, end_indices[0]))
+            start_row, end_row = 0, end_indices[0]
         elif i == num_tests-1: # last test
-            all_tests.append((end_indices[-1]+1, labels.shape[0]-1))
+            start_row, end_row = end_indices[-1]+1, labels.shape[0]-1
         else:
-            all_tests.append((end_indices[i-1]+1, end_indices[i]))
+            start_row, end_row = end_indices[i-1]+1, end_indices[i]
 
-    return all_tests
+        all_workouts.append(Workout(labels, start_row, end_row))
 
-
-def get_workouts_epoch_bounds(labels: ndarray) -> List[Tuple[int, int]]:
-    all_epoch_bounds = []
-
-    row_bounds = get_workouts_row_bounds(labels)
-    for (start, end) in row_bounds:
-        all_epoch_bounds.append((labels[start, LabelCol.START], labels[end, LabelCol.END]))
-    
-    return all_epoch_bounds
-
-
-def get_workouts_sensor(labels: ndarray) -> List[str]:
-    all_sensors = []
-
-    row_bounds = get_workouts_row_bounds(labels)
-    for (start, _) in row_bounds:
-        all_sensors.append(labels[start, LabelCol.SENSOR])
-    
-    return all_sensors
+    return all_workouts

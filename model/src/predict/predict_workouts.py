@@ -5,10 +5,10 @@ import math
 from numpy import ndarray
 from typing import List, Tuple, Dict
 
-from predict.predict import classify_imu_datapoints, classify_imu_datapoints_no_norm
-from data_processing.data_util import are_overlapping
-from data_processing.enums import Activity
-from data_processing.imu_util import normalize_imu_with_bounds
+from src.predict.predict import classify_imu_datapoints, classify_imu_datapoints_no_norm
+from src.data.util import are_overlapping
+from src.data.workout import Activity
+from src.data.imu_util import normalize_imu_with_bounds
 
 # number of data points in three minutes
 THREE_MIN = 12000

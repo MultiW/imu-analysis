@@ -1,6 +1,6 @@
-from data_processing.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
-from data_processing.enums import Activity
-from data_processing.config import BOOT_MODEL_FILE, POLE_MODEL_FILE
+from src.data.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
+from src.data.workout import Activity
+from src.config import BOOT_MODEL_FILE, POLE_MODEL_FILE
 
 import joblib
 import copy

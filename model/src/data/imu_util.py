@@ -9,8 +9,8 @@ import copy
 from collections import Counter
 
 from src.config import RAW_DIR, CLEAN_DIR, RAW_POLE_FILE, RAW_BOOT_FILE, MAX_SAMPLING_INTERVAL_RANGE
-from src.data.data_util import shift, low_pass_filter
-from src.data.enums import DataState
+from src.data.util import shift, low_pass_filter
+from src.data.data import DataState
 
 # import data types
 from pandas import DataFrame
@@ -43,16 +43,16 @@ class Sensor(Enum):
     Magnetometer = 'Magnetometer'
 
 
-def list_imu_abspaths(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, data_state: DataState = DataState.Raw) -> List[str]:
+def list_imu_abspaths(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, data_state: DataState = DataState.Raw) -> List[Path]:
     """
     List the absolute paths of all IMU files
     Only files satisfying all filter criterias will be returned
     """
-    data_dir = RAW_DIR if data_state == DataState.Raw else CLEAN_DIR
-    boot_file_stem = RAW_BOOT_FILE.stem
-    pole_file_stem = RAW_POLE_FILE.stem
+    data_dir: Path = RAW_DIR if data_state == DataState.Raw else CLEAN_DIR
+    boot_file_stem: str = RAW_BOOT_FILE.stem
+    pole_file_stem: str = RAW_POLE_FILE.stem
 
-    output: List[str] = []
+    output: List[Path] = []
     for filename in os.listdir(data_dir):
         if filename.startswith(boot_file_stem) or filename.startswith(pole_file_stem):
             # ignore if label file
@@ -63,11 +63,11 @@ def list_imu_abspaths(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, d
     return output
 
 
-def get_sensor_file(sensor_name: str, sensor_type):
-    files: List[str] = list_imu_abspaths(sensor_name, sensor_type)
+def get_sensor_file(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, data_state: DataState = DataState.Raw) -> Path:
+    files: List[Path] = list_imu_abspaths(sensor_name, sensor_type, data_state)
 
     if len(files) != 1:
-        raise Exception('More than one file found.')
+        raise Exception('Expected to find one IMU sensor file. Found %d.')
     
     return files[0]
 

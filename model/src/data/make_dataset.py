@@ -3,7 +3,7 @@ import numpy as np
 from src.data.imu_util import (
     load_imu_data, Sensor, list_imu_abspaths, clean_imu_data
 )
-from src.data.enums import DataState
+from src.data.data import DataState
 from src.config import CLEAN_DIR, CLEAN_SUFFIX
 
 
