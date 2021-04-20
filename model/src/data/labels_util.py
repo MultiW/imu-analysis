@@ -77,6 +77,7 @@ def save_clean_labels(labels: ndarray, activity: Activity):
 
 
 def load_labels(file: str, labels_type: Activity) -> ndarray:
+    # TODO: define types for each column. OR use pandas DataFrame
     df: DataFrame = pd.read_csv(file)
     if labels_type == Activity.Boot:
         return df[[
