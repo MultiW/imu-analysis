@@ -36,5 +36,4 @@ def multiplot(num_plots, plot_f: Callable[[int, any], None]):
             if curr_plot_idx == num_plots:
                 break
 
-    plt.rcParams['figure.figsize'] = [9, 5]
     plt.show()

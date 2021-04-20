@@ -67,7 +67,7 @@ def get_sensor_file(sensor_name: str = '', sensor_type: Sensor = Sensor.Any, dat
     files: List[Path] = list_imu_abspaths(sensor_name, sensor_type, data_state)
 
     if len(files) != 1:
-        raise Exception('Expected to find one IMU sensor file. Found %d.')
+        raise Exception("Expected to find one file for sensor '%s'. Found %d." % (sensor_name, len(files)))
     
     return files[0]
 
@@ -226,8 +226,8 @@ def clean_imu_data(imu_data: ndarray) -> ndarray:
     # Resample to make data points evenly spaced
     result = resample_uniformly(result)
 
-    # Convert timestamps to ms, with first data point at 0 ms
-    result = epoch_ms_to_s(result)
+    ## Convert timestamps to ms, with first data point at 0 ms
+    #result = epoch_ms_to_s(result)
 
     # Apply a low-pass filter
     result[:, ImuCol.XACCEL] = low_pass_filter(result[:, ImuCol.XACCEL])

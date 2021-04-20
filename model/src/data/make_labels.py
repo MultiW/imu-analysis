@@ -4,10 +4,10 @@ import copy
 from src.data.imu_util import (
     load_imu_data, Sensor, get_sensor_file, clean_imu_data, fix_epoch, ImuCol
 )
-from src.data.labels_util import get_labels_file, load_labels, get_workouts, LabelCol
+from src.data.labels_util import get_labels_file, load_labels, get_workouts, LabelCol, save_clean_labels
 from src.data.data import DataState
 from src.data.workout import Activity, Workout
-from src.config import CLEAN_DIR, CLEAN_SUFFIX
+from src.config import CLEAN_DIR
 from src.data.util import find_nearest_index
 
 from pathlib import Path
@@ -24,7 +24,7 @@ def to_clean_tag(tag: int, raw_imu: ndarray, raw_imu_epoch_fixed: ndarray, clean
     Return None if failed
     """
     # Row of raw IMU (that the given label points to)
-    label_rows: List[int] = np.where(raw_imu[:,ImuCol.TIME].astype(int) == tag)[0]
+    label_rows: List[int] = np.where(raw_imu[:, ImuCol.TIME].astype(int) == tag)[0]
 
     if len(label_rows) != 1:
         return None
@@ -38,9 +38,9 @@ def to_clean_tag(tag: int, raw_imu: ndarray, raw_imu_epoch_fixed: ndarray, clean
 
 
 def clean_workout_labels(workout: Workout) -> ndarray:
-    raw_imu: ndarray = get_sensor_file(sensor_name=workout.sensor, sensor_type=Sensor.Accelerometer, data_state=DataState.Raw)
+    raw_imu: ndarray = load_imu_data(get_sensor_file(sensor_name=workout.sensor, sensor_type=Sensor.Accelerometer, data_state=DataState.Raw))
     raw_imu_epoch_fixed: ndarray = fix_epoch(raw_imu)
-    clean_imu: ndarray = get_sensor_file(sensor_name=workout.sensor, sensor_type=Sensor.Accelerometer, data_state=DataState.Raw)
+    clean_imu: ndarray = np.load(get_sensor_file(sensor_name=workout.sensor, sensor_type=Sensor.Accelerometer, data_state=DataState.Clean))
 
     # Output labels
     clean_labels: ndarray = copy.deepcopy(workout.labels)
@@ -57,7 +57,7 @@ def clean_workout_labels(workout: Workout) -> ndarray:
         end_tag: int = to_clean_tag(end_tag, raw_imu, raw_imu_epoch_fixed, clean_imu)
 
         clean_labels[i, LabelCol.START] = start_tag
-        clean_labels[i, LabelCol.START] = end_tag
+        clean_labels[i, LabelCol.END] = end_tag
 
     return clean_labels
 
@@ -70,14 +70,17 @@ def make_labels(activity: Activity):
     for workout in get_workouts(raw_labels):
         clean_labels = np.vstack((clean_labels, clean_workout_labels(workout)))
 
-        clean_labels_file: str = get_labels_file(activity, data_state=DataState.Clean)
-        np.save(clean_labels_file, clean_labels)
+    save_clean_labels(clean_labels, activity)
 
 
 def main():
+    print("Adjusting pole labels...")
     make_labels(Activity.Pole)
+
+    print("Adjusting boot labels...")
     make_labels(Activity.Boot)
 
+    print("Done")
 
 if __name__ == '__main__':
     main()

@@ -4,7 +4,7 @@ from src.data.imu_util import (
     load_imu_data, Sensor, list_imu_abspaths, clean_imu_data
 )
 from src.data.data import DataState
-from src.config import CLEAN_DIR, CLEAN_SUFFIX
+from src.config import CLEAN_DIR, CLEAN_DATA_SUFFIX
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
         raw_imu = load_imu_data(file)
         clean_imu = clean_imu_data(raw_imu)
 
-        np.save(CLEAN_DIR / ("%s%s" % (file.stem, CLEAN_SUFFIX)), clean_imu)
+        np.save(CLEAN_DIR / ("%s%s" % (file.stem, CLEAN_DATA_SUFFIX)), clean_imu)
     
     print('Done')
 
