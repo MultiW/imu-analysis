@@ -286,21 +286,26 @@ def get_data_chunk(imu_data: ndarray, start_row: int, end_row: int, padding: Opt
     return imu_data[chunk_start:chunk_end,], (data_start, data_end)
 
 
-def data_to_features(imu_data: ndarray) -> ndarray:
+def data_to_features(full_imu_data: ndarray, start_row: int, end_row: int) -> ndarray:
     """
-    @param imu_data: for best performance, include than the required range of rows to be predicted. 
-        E.g. if you want to use the model for rows 100-200, include rows 50 to 250.
+    @param full_imu_data: for best performance, include the full dataset rather than just the "workout".
         This makes lead and lag features more accurate.
+    @param start_row: index in full IMU fdata where workout begins
+    @param end_row: index in full IMU fdata where workout ends
+    @return: return features built for the full dataset
     """
+    # normalize
+    features: ndarray = normalize_imu_with_bounds(full_imu_data, start_row, end_row)
+
     # acceleration features
     features = np.hstack((
-        np.array([imu_data[:, ImuCol.XACCEL]]).T,
-        np.array([imu_data[:, ImuCol.YACCEL]]).T,
-        np.array([imu_data[:, ImuCol.ZACCEL]]).T,
+        np.array([features[:, ImuCol.XACCEL]]).T,
+        np.array([features[:, ImuCol.YACCEL]]).T,
+        np.array([features[:, ImuCol.ZACCEL]]).T,
         np.array([np.sqrt(
-            np.square(imu_data[:, ImuCol.XACCEL]) 
-            + np.square(imu_data[:, ImuCol.YACCEL]) 
-            + np.square(imu_data[:, ImuCol.ZACCEL])
+            np.square(features[:, ImuCol.XACCEL]) 
+            + np.square(features[:, ImuCol.YACCEL]) 
+            + np.square(features[:, ImuCol.ZACCEL])
         )]).T
     ))
 
