@@ -5,7 +5,7 @@ import numpy as np
 # import data types
 from pandas import DataFrame
 from numpy import ndarray
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from pathlib import Path
 
 from src.data.workout import Activity, Workout
@@ -150,3 +150,46 @@ def get_workouts(labels: ndarray) -> List[Workout]:
         all_workouts.append(Workout(workout_labels, workout_labels[0, LabelCol.SENSOR]))
 
     return all_workouts
+
+
+def is_step_valid(step: int, workout: Workout) -> bool:
+    start_row: Optional[int] = workout.labels[step, LabelCol.START]
+    end_row: Optional[int] = workout.labels[step, LabelCol.END]
+    return start_row is not None and end_row is not None
+
+
+def find_neighboring_valid_steps(step: int, workout: Workout) -> Tuple[Optional[int], Optional[int]]:
+    prev_step: Optional[int] = None
+    next_step: Optional[int] = None
+    # find prev step
+    for i in range(step-1, -1, -1): # step-1 to 0
+        if is_step_valid(i, workout):
+            prev_step = i
+            break
+    # find next step
+    for i in range(step+1, workout.labels.shape[0]):
+        if is_step_valid(i, workout):
+            next_step = i
+            break
+    return prev_step, next_step
+
+
+def get_workout_data_range(workout: Workout) -> Tuple[int, int]:
+    start_row: Optional[int] = workout.labels[0, LabelCol.START]
+    end_row: Optional[int] = workout.labels[-1, LabelCol.END]
+
+    if start_row is None:
+        _, next_step = find_neighboring_valid_steps(0, workout)
+        if next_step is None:
+            print(workout.labels)
+            raise Exception('Something is wrong')
+        start_row = workout.labels[next_step, LabelCol.START]
+
+    if end_row is None:
+        num_steps: int = workout.labels.shape[0]
+        prev_step, _ = find_neighboring_valid_steps(num_steps-1, workout)
+        if prev_step is None:
+            raise Exception('Something is wrong')
+        end_row = workout.labels[prev_step, LabelCol.END]
+
+    return start_row, end_row

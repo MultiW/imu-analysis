@@ -15,6 +15,10 @@ from numpy import ndarray
 from typing import List
 
 
+# Keep workouts with less than this percentage of errors
+ERROR_THRESHOLD: int = 0.2
+
+
 def to_clean_tag(tag: int, raw_imu: ndarray, raw_imu_epoch_fixed: ndarray, clean_imu: ndarray) -> int:
     """
     Convert
@@ -66,6 +70,9 @@ def clean_workout_labels(workout: Workout) -> ndarray:
 
     if errors_found > 0:
         print('Number of labels that could not be mapped for sensor %s: %d' % (workout.sensor, errors_found))
+        if errors_found / num_steps >= ERROR_THRESHOLD:
+            print('Excluding this workout since it has too many errors.')
+            return None
 
     return clean_labels
 
@@ -76,7 +83,9 @@ def make_labels(activity: Activity):
 
     clean_labels: ndarray = np.zeros((0, raw_labels.shape[1]), dtype=np.float64)
     for workout in get_workouts(raw_labels):
-        clean_labels = np.vstack((clean_labels, clean_workout_labels(workout)))
+        workout_labels: ndarray = clean_workout_labels(workout)
+        if workout_labels is not None:
+            clean_labels = np.vstack((clean_labels, workout_labels))
 
     save_clean_labels(clean_labels, activity)
 
