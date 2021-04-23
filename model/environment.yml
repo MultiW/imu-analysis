@@ -118,4 +118,5 @@ dependencies:
     - threadpoolctl==2.1.0
     - toml==0.10.2
     - wrapt==1.12.1
+    - xgboost==1.4.1
 prefix: /home/multiw/miniconda3/envs/model-env

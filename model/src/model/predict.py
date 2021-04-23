@@ -1,13 +1,19 @@
-from src.data.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
-from src.data.workout import Activity
-from src.config import BOOT_MODEL_FILE, POLE_MODEL_FILE
-
-import joblib
-import copy
-
 # import data types
 from numpy import ndarray
 from typing import List, Tuple, Dict
+from pathlib import Path
+
+from src.data.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
+from src.data.workout import Activity
+from src.config import BOOT_MODEL_FILE, POLE_MODEL_FILE
+from src.visualization.visualize import multiplot
+from src.data.features_util import list_test_files
+
+import joblib
+import copy
+import numpy as np
+from matplotlib.lines import Line2D
+
 
 PADDING = 50
 
@@ -75,31 +81,31 @@ def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     return final_steps
 
 
-def classify_imu_datapoints(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> ndarray:
-    """
-    @param imu_data: assume that data is pre-processed
-    """
-    # Don't mutate input
-    imu_data = copy.deepcopy(imu_data)
-
-    # Normalize
-    imu_data[:, ImuCol.XACCEL] = normalize_with_bounds(imu_data[:, ImuCol.XACCEL], start_row, end_row)
-    imu_data[:, ImuCol.YACCEL] = normalize_with_bounds(imu_data[:, ImuCol.YACCEL], start_row, end_row)
-    imu_data[:, ImuCol.ZACCEL] = normalize_with_bounds(imu_data[:, ImuCol.ZACCEL], start_row, end_row)
-
-    return classify_imu_datapoints_no_norm(imu_data, start_row, end_row, activity)
-
-
-def classify_imu_datapoints_no_norm(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> ndarray:
-    """
-    @param imu_data: assume imu_data is already normalized
-    """
-    # Convert data to features
-    features = data_to_features(imu_data)
-    
-    # Classify
-    model = load_model(activity)
-    return model.predict(features[start_row:end_row+1,])
+#def classify_imu_datapoints(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> ndarray:
+#    """
+#    @param imu_data: assume that data is pre-processed
+#    """
+#    # Don't mutate input
+#    imu_data = copy.deepcopy(imu_data)
+#
+#    # Normalize
+#    imu_data[:, ImuCol.XACCEL] = normalize_with_bounds(imu_data[:, ImuCol.XACCEL], start_row, end_row)
+#    imu_data[:, ImuCol.YACCEL] = normalize_with_bounds(imu_data[:, ImuCol.YACCEL], start_row, end_row)
+#    imu_data[:, ImuCol.ZACCEL] = normalize_with_bounds(imu_data[:, ImuCol.ZACCEL], start_row, end_row)
+#
+#    return classify_imu_datapoints_no_norm(imu_data, start_row, end_row, activity)
+#
+#
+#def classify_imu_datapoints_no_norm(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> ndarray:
+#    """
+#    @param imu_data: assume imu_data is already normalized
+#    """
+#    # Convert data to features
+#    features = data_to_features(imu_data, start_row, end_row)
+#    
+#    # Classify
+#    model = load_model(activity)
+#    return model.predict(features[start_row:end_row+1,])
     
 
 
@@ -131,16 +137,57 @@ def classify_imu_datapoints_no_norm(imu_data: ndarray, start_row: int, end_row: 
    
 
 
-def label_steps(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> List[Tuple[int, int]]:
-    """
-    @param imu_data: already pre-processed data. Not normalized
-    @return: returns steps data in the form of a tuple. Tuple contains start/end rows, with 
-        row numbers starting from the inputted start_row.
-    """
-    classification: ndarray = classify_imu_datapoints(imu_data, start_row, end_row, activity)
+#def label_steps(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> List[Tuple[int, int]]:
+#    """
+#    @param imu_data: already pre-processed data. Not normalized
+#    @return: returns steps data in the form of a tuple. Tuple contains start/end rows, with 
+#        row numbers starting from the inputted start_row.
+#    """
+#    classification: ndarray = classify_imu_datapoints(imu_data, start_row, end_row, activity)
+#
+#    # Find start/end points
+#    result: List[Tuple[int, int]] = group_points(classification)
+#    result: List[Tuple[int, int]] = merge_groups(result)
+#
+#    return result
 
-    # Find start/end points
-    result: List[Tuple[int, int]] = group_points(classification)
-    result: List[Tuple[int, int]] = merge_groups(result)
 
-    return result
+def evaluate_on_test_data(features: ndarray, labels: ndarray, activity: Activity) -> Tuple[float, ndarray]:
+    model = load_model(activity)
+    return model.score(features, labels), model.predict(features)
+
+
+def test_results(activity: Activity, plot_results: bool):
+    test_data: List[Tuple[Path, Path]] = list_test_files(activity)
+        
+    def plot_helper(idx, plot):
+        # Predict
+        features_file, labels_file = test_data[idx]
+        features, labels = np.load(features_file), np.load(labels_file)
+        accuracy, prediction = evaluate_on_test_data(features, labels, activity)
+        print('Accuracy score: %f' % accuracy)
+
+        # Plot x-acceleration
+        plot.plot(features[:,0])
+        plot.plot(features[:,1])
+        plot.plot(features[:,2])
+
+        if not plot_results:
+            return
+        
+        # Plot prediction
+        for i in range(prediction.shape[0]):
+            if prediction[i] == 1:
+                plot.axvline(x=i, color='green', linestyle='dotted')
+        
+        # Plot actual
+        for i in range(labels.shape[0]):
+            if labels[i] == 1:
+                plot.axvline(x=i, color='red', linestyle='dotted')
+                
+        # Legend
+        legend_items = [Line2D([], [], color='green', linestyle='dotted', label='Prediction'), 
+                    Line2D([], [], color='red', linestyle='dotted', label='Actual')]
+        plot.legend(handles=legend_items)
+                
+    multiplot(len(test_data), plot_helper)

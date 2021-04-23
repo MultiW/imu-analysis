@@ -30,8 +30,8 @@ TEST_LABELS_SUFFIX: str = '_labels.npy'
 
 # Model Paths
 ML_MODELS_DIR: Path = MODEL_DIR / 'models'
-BOOT_MODEL_FILE: Path = ML_MODELS_DIR / 'gbm-boot-model-v3.pkl' # CONFIGURE THIS
-POLE_MODEL_FILE: Path = ML_MODELS_DIR / 'gbm-pole-model-v3.pkl' # CONFIGURE THIS
+BOOT_MODEL_FILE: Path = ML_MODELS_DIR / 'gbm-boot-model-v4.pkl' # CONFIGURE THIS
+POLE_MODEL_FILE: Path = ML_MODELS_DIR / 'gbm-pole-model-v4.pkl' # CONFIGURE THIS
 
 # Maximum time interval range that we expected from the IMU sensor. Everything else is considered an outlier
 MAX_SAMPLING_INTERVAL_RANGE: int = 3 # in milliseconds
