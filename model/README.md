@@ -61,7 +61,131 @@ The features we used are:
 * Magnitude of the acceleration, i.e. the distance, L2 norm, etc.
 * Each of the previous features lagged 5-10 data points, and each of the previous features lead 5-10 data points.
 
-### ```gbm-boot-model-v2.pkl```, ```gbm-pole-model-v2.pkl```
+Data used:
+* 11L and 11R sensor data. Two pole workouts and two boot workouts.
 
-Pre-processing changes
+### ```gbm-boot-model-v2.pkl```, ```gbm-pole-model-v2.pkl```
+Training data pre-processing:
 * A low-pass filter with a cutoff of 10Hz was applied to all the x, y, z acceleration values
+
+Data used:
+* 11L and 11R sensor data. Two pole workouts and two boot workouts.
+
+### ```gbm-boot-model-v3.pkl```, ```gbm-pole-model-v3.pkl```
+Training data pre-processing:
+* A low-pass filter with a cutoff of 10Hz was applied to all the x, y, z acceleration values
+
+Data changes:
+* Used all available data to train the GBM model. Number of datapoints: pole - 421,895, boot - 363,025
+
+### ```gbm-boot-model-v4.pkl```, ```gbm-pole-model-v4.pkl```
+Training data pre-processing:
+* Model was trained on un-smoothed data
+
+Testing data pre-processing:
+* Model was tested on heavily smoothed (low-pass filter) data. Specifically, pole - 8Hz and boot - 3Hz.
+
+Model changes:
+* Use XGBoost instead of GBM
+
+Boot results:
+```
+Accuracy: 0.895374
+              precision    recall  f1-score   support
+
+   Non-steps       0.93      0.89      0.91      5198
+       Steps       0.85      0.90      0.88      3729
+
+    accuracy                           0.90      8927
+   macro avg       0.89      0.90      0.89      8927
+weighted avg       0.90      0.90      0.90      8927
+
+Accuracy: 0.925490
+              precision    recall  f1-score   support
+
+   Non-steps       0.91      0.98      0.94      5532
+       Steps       0.96      0.84      0.90      3393
+
+    accuracy                           0.93      8925
+   macro avg       0.93      0.91      0.92      8925
+weighted avg       0.93      0.93      0.92      8925
+```
+
+Pole results:
+```
+Accuracy: 0.974434
+              precision    recall  f1-score   support
+
+   Non-steps       0.99      0.94      0.97      4908
+       Steps       0.97      0.99      0.98      8078
+
+    accuracy                           0.97     12986
+   macro avg       0.98      0.97      0.97     12986
+weighted avg       0.97      0.97      0.97     12986
+
+Accuracy: 0.976395
+              precision    recall  f1-score   support
+
+   Non-steps       0.99      0.95      0.97      6147
+       Steps       0.97      0.99      0.98      9019
+
+    accuracy                           0.98     15166
+   macro avg       0.98      0.97      0.98     15166
+weighted avg       0.98      0.98      0.98     15166
+```
+
+### ```gbm-boot-model-v5.pkl```, ```gbm-pole-model-v5.pkl```
+Training data pre-processing:
+* Model was trained on heavily smoothed (low-pass filter) data. Specifically, pole - 8Hz and boot - 3Hz.
+
+Testing data pre-processing:
+* Model was tested on heavily smoothed (low-pass filter) data. Specifically, pole - 8Hz and boot - 3Hz.
+
+Model:
+* XGBoost
+
+Boot results:
+```
+Accuracy: 0.874538
+              precision    recall  f1-score   support
+
+   Non-steps       0.93      0.85      0.89      5198
+       Steps       0.82      0.91      0.86      3729
+
+    accuracy                           0.87      8927
+   macro avg       0.87      0.88      0.87      8927
+weighted avg       0.88      0.87      0.88      8927
+
+Accuracy: 0.878319
+              precision    recall  f1-score   support
+
+   Non-steps       0.86      0.95      0.91      5532
+       Steps       0.91      0.75      0.82      3393
+
+    accuracy                           0.88      8925
+   macro avg       0.89      0.85      0.87      8925
+weighted avg       0.88      0.88      0.88      8925
+```
+
+Pole results:
+```
+Accuracy: 0.979208
+              precision    recall  f1-score   support
+
+   Non-steps       0.98      0.97      0.97      4908
+       Steps       0.98      0.99      0.98      8078
+
+    accuracy                           0.98     12986
+   macro avg       0.98      0.98      0.98     12986
+weighted avg       0.98      0.98      0.98     12986
+
+Accuracy: 0.980219
+              precision    recall  f1-score   support
+
+   Non-steps       0.99      0.97      0.98      6147
+       Steps       0.98      0.99      0.98      9019
+
+    accuracy                           0.98     15166
+   macro avg       0.98      0.98      0.98     15166
+weighted avg       0.98      0.98      0.98     15166
+```

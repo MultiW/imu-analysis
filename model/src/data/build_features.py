@@ -54,7 +54,7 @@ def label_data(full_features: ndarray, workout: Workout) -> ndarray:
     return full_labels
 
 
-def build_workout_dataset(workout: Workout) -> Tuple[ndarray, ndarray]:
+def build_workout_dataset(workout: Workout, activity: Activity) -> Tuple[ndarray, ndarray]:
     # Get full IMU data for workout
     full_imu_data: ndarray = np.load(get_sensor_file(sensor_name=workout.sensor, sensor_type=Sensor.Accelerometer, data_state=DataState.Clean))
     
@@ -62,7 +62,7 @@ def build_workout_dataset(workout: Workout) -> Tuple[ndarray, ndarray]:
     start_row, end_row = get_workout_data_range(workout)
 
     # Build input dataset for model
-    full_features: ndarray = data_to_features(full_imu_data, start_row, end_row)
+    full_features: ndarray = data_to_features(full_imu_data, start_row, end_row, activity)
 
     # Build labels
     full_labels: ndarray = label_data(full_features, workout)
@@ -101,6 +101,9 @@ def generate_train_test(features_list: List[ndarray], labels_list: List[ndarray]
             continue
         train_features = np.vstack((train_features, features_list[i]))
         train_labels = np.concatenate((train_labels, labels_list[i]))
+
+    print('Data size:', train_features.shape, train_labels.shape)
+    
     train_dir: Path = TRAIN_BOOT_DIR if activity == Activity.Boot else TRAIN_POLE_DIR
     np.save(train_dir / TRAIN_FEATURES_FILENAME, train_features)
     np.save(train_dir / TRAIN_LABELS_FILENAME, train_labels)
@@ -117,7 +120,7 @@ def build_features(labels: ndarray, activity: Activity):
         workout: Workout = workouts[i]
         print('Generating features and labels for workout in sensor %s' % workout.sensor)
 
-        features, labels, no_errors = build_workout_dataset(workout)
+        features, labels, no_errors = build_workout_dataset(workout, activity)
         features_list.append(features)
         labels_list.append(labels)
         if no_errors:

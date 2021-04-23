@@ -34,7 +34,8 @@ def load_model(activity):
 
 def group_points(classification: ndarray) -> List[Tuple[int, int]]:
     """
-    Returns a list of all potential steps. The points are defined by their start and end row indexes
+    Merge all neighboring points (labeled 1) into the same group.
+    Return a list of these groups, defined by their start and end row indexes.
     """
     all_steps: List[Tuple[int, int]] = []
 
@@ -59,6 +60,9 @@ def group_points(classification: ndarray) -> List[Tuple[int, int]]:
 
 
 def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """
+    For groups of consecutive points that are "close enough", merge them into one group and classify it as a "step"
+    """
     final_steps = []
 
     if len(all_steps) == 0:
@@ -155,15 +159,20 @@ def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
 
 
 def evaluate_on_test_data(features: ndarray, labels: ndarray, activity: Activity) -> Tuple[float, ndarray]:
-    prediction: ndarray = load_model(activity).predict(features)
+    model: any = load_model(activity)
+    prediction: ndarray = model.predict(features)
+    print('Accuracy: %f' % model.score(features, labels))
     print(classification_report(labels, prediction, target_names=['Non-steps', 'Steps']))
     return prediction
 
 
-def evaluate_on_test_data_plot(activity: Activity, plot_results: bool):
+def evaluate_on_test_data_plot(activity: Activity, plot_results: bool, test_idx=None):
     test_data: List[Tuple[Path, Path]] = list_test_files(activity)
-        
+
     def plot_helper(idx, plot):
+        if test_idx is not None and test_idx != idx:
+            return
+
         features_file, labels_file = test_data[idx]
         features, labels = np.load(features_file), np.load(labels_file)
 

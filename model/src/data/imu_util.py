@@ -8,9 +8,10 @@ import os
 import copy
 from collections import Counter
 
-from src.config import RAW_DIR, CLEAN_DIR, RAW_POLE_FILE, RAW_BOOT_FILE, MAX_SAMPLING_INTERVAL_RANGE
+from src.config import RAW_DIR, CLEAN_DIR, RAW_POLE_FILE, RAW_BOOT_FILE, MAX_SAMPLING_INTERVAL_RANGE, BOOT_CUTOFF, POLE_CUTOFF
 from src.data.util import shift, low_pass_filter
 from src.data.data import DataState
+from src.data.workout import Activity
 
 # import data types
 from pandas import DataFrame
@@ -229,10 +230,10 @@ def clean_imu_data(imu_data: ndarray) -> ndarray:
     ## Convert timestamps to ms, with first data point at 0 ms
     #result = epoch_ms_to_s(result)
 
-    # Apply a low-pass filter
-    result[:, ImuCol.XACCEL] = low_pass_filter(result[:, ImuCol.XACCEL])
-    result[:, ImuCol.YACCEL] = low_pass_filter(result[:, ImuCol.YACCEL])
-    result[:, ImuCol.ZACCEL] = low_pass_filter(result[:, ImuCol.ZACCEL])
+    ## Apply a low-pass filter
+    #result[:, ImuCol.XACCEL] = low_pass_filter(result[:, ImuCol.XACCEL])
+    #result[:, ImuCol.YACCEL] = low_pass_filter(result[:, ImuCol.YACCEL])
+    #result[:, ImuCol.ZACCEL] = low_pass_filter(result[:, ImuCol.ZACCEL])
 
     return result
 
@@ -286,7 +287,7 @@ def get_data_chunk(imu_data: ndarray, start_row: int, end_row: int, padding: Opt
     return imu_data[chunk_start:chunk_end,], (data_start, data_end)
 
 
-def data_to_features(full_imu_data: ndarray, start_row: int, end_row: int) -> ndarray:
+def data_to_features(full_imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> ndarray:
     """
     @param full_imu_data: for best performance, include the full dataset rather than just the "workout".
         This makes lead and lag features more accurate.
@@ -296,6 +297,12 @@ def data_to_features(full_imu_data: ndarray, start_row: int, end_row: int) -> nd
     """
     # normalize
     features: ndarray = normalize_imu_with_bounds(full_imu_data, start_row, end_row)
+
+    # apply low-pass filter
+    cutoff = BOOT_CUTOFF if activity == Activity.Boot else POLE_CUTOFF
+    features[:, ImuCol.XACCEL] = low_pass_filter(features[:, ImuCol.XACCEL], cutoff=cutoff)
+    features[:, ImuCol.YACCEL] = low_pass_filter(features[:, ImuCol.YACCEL], cutoff=cutoff)
+    features[:, ImuCol.ZACCEL] = low_pass_filter(features[:, ImuCol.ZACCEL], cutoff=cutoff)
 
     # acceleration features
     features = np.hstack((
