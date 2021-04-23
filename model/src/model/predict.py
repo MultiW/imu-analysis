@@ -13,6 +13,8 @@ import joblib
 import copy
 import numpy as np
 from matplotlib.lines import Line2D
+from sklearn.metrics import classification_report
+
 
 
 PADDING = 50
@@ -153,19 +155,20 @@ def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
 
 
 def evaluate_on_test_data(features: ndarray, labels: ndarray, activity: Activity) -> Tuple[float, ndarray]:
-    model = load_model(activity)
-    return model.score(features, labels), model.predict(features)
+    prediction: ndarray = load_model(activity).predict(features)
+    print(classification_report(labels, prediction, target_names=['Non-steps', 'Steps']))
+    return prediction
 
 
-def test_results(activity: Activity, plot_results: bool):
+def evaluate_on_test_data_plot(activity: Activity, plot_results: bool):
     test_data: List[Tuple[Path, Path]] = list_test_files(activity)
         
     def plot_helper(idx, plot):
-        # Predict
         features_file, labels_file = test_data[idx]
         features, labels = np.load(features_file), np.load(labels_file)
-        accuracy, prediction = evaluate_on_test_data(features, labels, activity)
-        print('Accuracy score: %f' % accuracy)
+
+        # Predict
+        prediction: ndarray = evaluate_on_test_data(features, labels, activity)
 
         # Plot x-acceleration
         plot.plot(features[:,0])
