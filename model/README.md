@@ -15,6 +15,13 @@ Our application performs two tasks:
 
     TODO show example
 
+## Project
+The [notebooks](notebooks) show how the "steps labeling" model is built. The code in these notebooks can be run to build the model and analyze the models' performance.
+
+TODO: script to clean data and build model
+
+TODO: script to process data and predict model
+
 ## Training
 The data we have are:
 * Raw IMU data: time series data for acceleration, angular velocity, and magnetic force.
