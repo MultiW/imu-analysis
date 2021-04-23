@@ -21,7 +21,8 @@ from sklearn.metrics import classification_report, confusion_matrix
 PADDING = 50
 
 GROUPING_SIZE = 8 # this should depend on the sampling interval. This value should equal 5*0.02 = 0.1 seconds
-STEP_MIN = 10 # computed from minimum of labeled data set
+STEP_MIN_POLE = 10 # computed from minimum of labeled data set
+STEP_MIN_BOOT = 12 # computed from minimum of labeled data set
     
 
 def load_model(activity):
@@ -60,7 +61,7 @@ def group_points(classification: ndarray) -> List[Tuple[int, int]]:
     return all_steps
 
 
-def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def merge_groups(all_steps: List[Tuple[int, int]], activity: Activity) -> List[Tuple[int, int]]:
     """
     For groups of consecutive points that are "close enough", merge them into one group and classify it as a "step"
     """
@@ -68,6 +69,8 @@ def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
 
     if len(all_steps) == 0:
         return final_steps
+
+    step_min: int = STEP_MIN_BOOT if activity == Activity.Boot else STEP_MIN_POLE
 
     merge_start, merge_end = all_steps[0]
     for i in range(1, len(all_steps)):
@@ -78,8 +81,8 @@ def merge_groups(all_steps: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
             merge_end = curr_end
         # new step
         else:
-            if merge_end - merge_start + 1 >= STEP_MIN:
-                # add steps of at least STEP_MIN size
+            if merge_end - merge_start + 1 >= step_min:
+                # add steps of at least step_min size
                 final_steps.append((merge_start, merge_end))
             merge_start, merge_end = curr_start, curr_end
     # last step
@@ -216,12 +219,12 @@ def label_steps_for_features(features: ndarray, activity: Activity) -> List[Tupl
 
     # Find start/end points
     result: List[Tuple[int, int]] = group_points(prediction)
-    result: List[Tuple[int, int]] = merge_groups(result)
+    result: List[Tuple[int, int]] = merge_groups(result, activity)
 
     return result
 
 
-def step_labeling_accuracy_sumamry(prediction: List[Tuple[int, int]], actual: List[Tuple[int, int]]):
+def summarize_step_labeling_accuracy(prediction: List[Tuple[int, int]], actual: List[Tuple[int, int]]):
     # Build array of actual start and end points
     actual_starts: ndarray = np.zeros(0)
     actual_ends: ndarray = np.zeros(0)
@@ -275,24 +278,24 @@ def evaluate_step_labeling_on_test(activity: Activity):
         # Plot predicted steps
         predicted_steps: List[Tuple[int, int]] = label_steps_for_features(features, activity)
         for start, end in predicted_steps:
-            plot.axvline(x=start, color='red', linestyle='dashed')
-            plot.axvline(x=end, color='red', linestyle='dotted')
+            plot.axvline(x=start, color='red', linestyle='dotted')
+            plot.axvline(x=end, color='red', linestyle='dashed')
 
         # Plot actual steps
         actual_steps: List[Tuple[int, int]] = group_points(labels)
         for start, end in actual_steps:
-            plot.axvline(x=start, color='green', linestyle='dashed')
-            plot.axvline(x=end, color='green', linestyle='dotted')
+            plot.axvline(x=start, color='green', linestyle='dotted')
+            plot.axvline(x=end, color='green', linestyle='dashed')
 
         # Summarize results
         print('Test %d' % idx)
-        step_labeling_accuracy_sumamry(predicted_steps, actual_steps)
+        summarize_step_labeling_accuracy(predicted_steps, actual_steps)
 
         # Legend
-        legend_items = [Line2D([], [], color='red', linestyle='dashed', label='Predicted start'), 
-                    Line2D([], [], color='red', linestyle='dotted', label='Predicted end'),
-                    Line2D([], [], color='green', linestyle='dashed', label='Actual start'), 
-                    Line2D([], [], color='green', linestyle='dotted', label='Actual end')]
+        legend_items = [Line2D([], [], color='red', linestyle='dotted', label='Predicted start'), 
+                    Line2D([], [], color='red', linestyle='dashed', label='Predicted end'),
+                    Line2D([], [], color='green', linestyle='dotted', label='Actual start'), 
+                    Line2D([], [], color='green', linestyle='dashed', label='Actual end')]
         plot.legend(handles=legend_items)
 
         plot.title.set_text(str(idx))
@@ -316,21 +319,17 @@ def display_step_labeling_result_on_test(activity: Activity):
         # Plot predicted steps
         predicted_steps: List[Tuple[int, int]] = label_steps_for_features(features, activity)
         for start, end in predicted_steps:
-            plot.axvline(x=start, color='red', linestyle='dashed')
-            plot.axvline(x=end, color='red', linestyle='dotted')
+            plot.axvline(x=start, color='red', linestyle='dotted')
+            plot.axvline(x=end, color='red', linestyle='dashed')
 
         # Legend
-        legend_items = [Line2D([], [], color='red', linestyle='dashed', label='Predicted start'), 
-                    Line2D([], [], color='red', linestyle='dotted', label='Predicted end')]
+        legend_items = [Line2D([], [], color='red', linestyle='dotted', label='Predicted start'), 
+                    Line2D([], [], color='red', linestyle='dashed', label='Predicted end')]
         plot.legend(handles=legend_items)
 
         plot.title.set_text(str(idx))
 
     multiplot(len(test_data), plot_helper)
-
-
-def predict_steps(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> List[Tuple[int, int]]:
-    pass
 
 
 if __name__ == '__main__':
