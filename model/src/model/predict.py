@@ -1,6 +1,6 @@
 # import data types
 from numpy import ndarray
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Set
 from pathlib import Path
 
 from src.data.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
@@ -229,35 +229,35 @@ def step_labeling_accuracy_sumamry(prediction: List[Tuple[int, int]], actual: Li
         actual_starts = np.concatenate((actual_starts, np.array([start])))
         actual_ends = np.concatenate((actual_ends, np.array([end])))
 
-    # Check accuracy
-    off_by_1_start: int = 0
-    off_by_1_end: int = 0
-    off_by_2_start: int = 0
-    off_by_2_end: int = 0
-    for start, end in prediction:
-        nearest_start: int = find_nearest(actual_starts, start)
-        nearest_end: int = find_nearest(actual_ends, end)
-
-        if abs(nearest_start - start) <= 1:
-            off_by_1_start += 1
-        if abs(nearest_end - end) <= 1:
-            off_by_1_end += 1
-        if abs(nearest_start - start) <= 2:
-            off_by_2_start += 1
-        if abs(nearest_end - end) <= 2:
-            off_by_2_end += 1
-
-    # Summarize
     num_steps: int = len(actual)
     print('Total steps: %d' % num_steps)
     print('Total steps predicted: %d' % len(prediction))
-    print('Accurate to within 1 datapoint:')
-    print('- Start: %f' % (off_by_1_start/num_steps))
-    print('- End: %f' % (off_by_1_end/num_steps))
-    print('Accurate to within 2 datapoint:')
-    print('- Start: %f' % (off_by_2_start/num_steps))
-    print('- End: %f' % (off_by_2_end/num_steps))
+
+    # Check accuracy
+    for cutoff in range(5):
+        # Don't want a step to be double counted 
+        # i.e. predicting step 2 ten times should result in 1 correct and 9 incorrect predictions
+        used_starts: Set[int] = set()
+        used_ends: Set[int] = set()
+
+        off_by_x_start: int = 0
+        off_by_x_end: int = 0
+        for start, end in prediction:
+            nearest_start: int = find_nearest(actual_starts, start)
+            nearest_end: int = find_nearest(actual_ends, end)
+
+            if abs(nearest_start - start) <= cutoff and nearest_start not in used_starts:
+                off_by_x_start += 1
+                used_starts.add(nearest_start) # once a step has been correctly predicted, mark it as so
+            if abs(nearest_end - end) <= cutoff and nearest_end not in used_ends:
+                off_by_x_end += 1
+                used_starts.add(nearest_start)
+        
+        print('Accurate to within %d datapoint:' % cutoff)
+        print('- Start: %f' % (off_by_x_start/num_steps))
+        print('- End: %f' % (off_by_x_end/num_steps))
     print('')
+
 
 def evaluate_step_labeling_on_test(activity: Activity):
     test_data: List[Tuple[Path, Path]] = list_test_files(activity)
@@ -327,3 +327,11 @@ def display_step_labeling_result_on_test(activity: Activity):
         plot.title.set_text(str(idx))
 
     multiplot(len(test_data), plot_helper)
+
+
+def predict_steps(imu_data: ndarray, start_row: int, end_row: int, activity: Activity) -> List[Tuple[int, int]]:
+    pass
+
+
+if __name__ == '__main__':
+    pass

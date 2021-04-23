@@ -97,6 +97,9 @@ Model changes:
 
 Boot results:
 ```
+k-fold cross-validation result
+Mean Accuracy: 0.956 (0.001)
+
 Accuracy: 0.895374
               precision    recall  f1-score   support
 
