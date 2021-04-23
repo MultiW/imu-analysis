@@ -1,6 +1,6 @@
 # import data types
 from numpy import ndarray
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from pathlib import Path
 
 from src.data.imu_util import ImuCol, get_data_chunk, normalize_with_bounds, data_to_features
@@ -8,12 +8,13 @@ from src.data.workout import Activity
 from src.config import BOOT_MODEL_FILE, POLE_MODEL_FILE
 from src.visualization.visualize import multiplot
 from src.data.features_util import list_test_files
+from src.data.util import find_nearest
 
 import joblib
 import copy
 import numpy as np
 from matplotlib.lines import Line2D
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 
 
 
@@ -162,16 +163,20 @@ def evaluate_on_test_data(features: ndarray, labels: ndarray, activity: Activity
     model: any = load_model(activity)
     prediction: ndarray = model.predict(features)
     print('Accuracy: %f' % model.score(features, labels))
+    print('Confusion Matrix:')
+    print(confusion_matrix(labels, prediction))
+    print('Classification Report:')
     print(classification_report(labels, prediction, target_names=['Non-steps', 'Steps']))
     return prediction
 
 
-def evaluate_on_test_data_plot(activity: Activity, plot_results: bool, test_idx=None):
+def evaluate_on_test_data_plot(activity: Activity, plot_results: bool, test_idx: Optional[int]=None):
     test_data: List[Tuple[Path, Path]] = list_test_files(activity)
+    num_plots: int = len(test_data) if test_idx is None else 1
 
     def plot_helper(idx, plot):
-        if test_idx is not None and test_idx != idx:
-            return
+        if test_idx is not None:
+            idx = test_idx
 
         features_file, labels_file = test_data[idx]
         features, labels = np.load(features_file), np.load(labels_file)
@@ -181,8 +186,8 @@ def evaluate_on_test_data_plot(activity: Activity, plot_results: bool, test_idx=
 
         # Plot x-acceleration
         plot.plot(features[:,0])
-        plot.plot(features[:,1])
-        plot.plot(features[:,2])
+        # plot.plot(features[:,1])
+        # plot.plot(features[:,2])
 
         if not plot_results:
             return
@@ -190,16 +195,135 @@ def evaluate_on_test_data_plot(activity: Activity, plot_results: bool, test_idx=
         # Plot prediction
         for i in range(prediction.shape[0]):
             if prediction[i] == 1:
-                plot.axvline(x=i, color='green', linestyle='dotted')
+                plot.axvline(x=i, color='red', linestyle='dashed')
         
         # Plot actual
         for i in range(labels.shape[0]):
             if labels[i] == 1:
-                plot.axvline(x=i, color='red', linestyle='dotted')
+                plot.axvline(x=i, color='green', linestyle='dotted')
                 
         # Legend
-        legend_items = [Line2D([], [], color='green', linestyle='dotted', label='Prediction'), 
-                    Line2D([], [], color='red', linestyle='dotted', label='Actual')]
+        legend_items = [Line2D([], [], color='red', linestyle='dashed', label='Prediction'), 
+                    Line2D([], [], color='green', linestyle='dotted', label='Actual')]
         plot.legend(handles=legend_items)
                 
+    multiplot(num_plots, plot_helper)
+
+
+def label_steps_for_features(features: ndarray, activity: Activity) -> List[Tuple[int, int]]:
+    model: any = load_model(activity)
+    prediction: ndarray = model.predict(features)
+
+    # Find start/end points
+    result: List[Tuple[int, int]] = group_points(prediction)
+    result: List[Tuple[int, int]] = merge_groups(result)
+
+    return result
+
+
+def step_labeling_accuracy_sumamry(prediction: List[Tuple[int, int]], actual: List[Tuple[int, int]]):
+    # Build array of actual start and end points
+    actual_starts: ndarray = np.zeros(0)
+    actual_ends: ndarray = np.zeros(0)
+    for start, end in actual:
+        actual_starts = np.concatenate((actual_starts, np.array([start])))
+        actual_ends = np.concatenate((actual_ends, np.array([end])))
+
+    # Check accuracy
+    off_by_1_start: int = 0
+    off_by_1_end: int = 0
+    off_by_2_start: int = 0
+    off_by_2_end: int = 0
+    for start, end in prediction:
+        nearest_start: int = find_nearest(actual_starts, start)
+        nearest_end: int = find_nearest(actual_ends, end)
+
+        if abs(nearest_start - start) <= 1:
+            off_by_1_start += 1
+        if abs(nearest_end - end) <= 1:
+            off_by_1_end += 1
+        if abs(nearest_start - start) <= 2:
+            off_by_2_start += 1
+        if abs(nearest_end - end) <= 2:
+            off_by_2_end += 1
+
+    # Summarize
+    num_steps: int = len(actual)
+    print('Total steps: %d' % num_steps)
+    print('Total steps predicted: %d' % len(prediction))
+    print('Accurate to within 1 datapoint:')
+    print('- Start: %f' % (off_by_1_start/num_steps))
+    print('- End: %f' % (off_by_1_end/num_steps))
+    print('Accurate to within 2 datapoint:')
+    print('- Start: %f' % (off_by_2_start/num_steps))
+    print('- End: %f' % (off_by_2_end/num_steps))
+    print('')
+
+def evaluate_step_labeling_on_test(activity: Activity):
+    test_data: List[Tuple[Path, Path]] = list_test_files(activity)
+
+    def plot_helper(idx, plot):
+        # Load test data
+        features_file, labels_file = test_data[idx]
+        features, labels = np.load(features_file), np.load(labels_file)
+
+        # Plot data
+        plot.plot(features[:,0])
+        # plot.plot(features[:,1])
+        # plot.plot(features[:,2])
+
+        # Plot predicted steps
+        predicted_steps: List[Tuple[int, int]] = label_steps_for_features(features, activity)
+        for start, end in predicted_steps:
+            plot.axvline(x=start, color='red', linestyle='dashed')
+            plot.axvline(x=end, color='red', linestyle='dotted')
+
+        # Plot actual steps
+        actual_steps: List[Tuple[int, int]] = group_points(labels)
+        for start, end in actual_steps:
+            plot.axvline(x=start, color='green', linestyle='dashed')
+            plot.axvline(x=end, color='green', linestyle='dotted')
+
+        # Summarize results
+        print('Test %d' % idx)
+        step_labeling_accuracy_sumamry(predicted_steps, actual_steps)
+
+        # Legend
+        legend_items = [Line2D([], [], color='red', linestyle='dashed', label='Predicted start'), 
+                    Line2D([], [], color='red', linestyle='dotted', label='Predicted end'),
+                    Line2D([], [], color='green', linestyle='dashed', label='Actual start'), 
+                    Line2D([], [], color='green', linestyle='dotted', label='Actual end')]
+        plot.legend(handles=legend_items)
+
+        plot.title.set_text(str(idx))
+
+    multiplot(len(test_data), plot_helper)
+
+
+def display_step_labeling_result_on_test(activity: Activity):
+    test_data: List[Tuple[Path, Path]] = list_test_files(activity)
+
+    def plot_helper(idx, plot):
+        # Load test data
+        features_file, labels_file = test_data[idx]
+        features, _ = np.load(features_file), np.load(labels_file)
+
+        # Plot data
+        plot.plot(features[:,0])
+        # plot.plot(features[:,1])
+        # plot.plot(features[:,2])
+
+        # Plot predicted steps
+        predicted_steps: List[Tuple[int, int]] = label_steps_for_features(features, activity)
+        for start, end in predicted_steps:
+            plot.axvline(x=start, color='red', linestyle='dashed')
+            plot.axvline(x=end, color='red', linestyle='dotted')
+
+        # Legend
+        legend_items = [Line2D([], [], color='red', linestyle='dashed', label='Predicted start'), 
+                    Line2D([], [], color='red', linestyle='dotted', label='Predicted end')]
+        plot.legend(handles=legend_items)
+
+        plot.title.set_text(str(idx))
+
     multiplot(len(test_data), plot_helper)
