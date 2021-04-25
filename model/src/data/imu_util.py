@@ -313,11 +313,17 @@ def data_to_features(full_imu_data: ndarray, start_row: int, end_row: int, activ
             np.square(features[:, ImuCol.XACCEL]) 
             + np.square(features[:, ImuCol.YACCEL]) 
             + np.square(features[:, ImuCol.ZACCEL])
-        )]).T
+        )]).T,
+        np.array([np.gradient(features[:, ImuCol.XACCEL])]).T,
+        np.array([np.gradient(np.gradient(features[:, ImuCol.XACCEL]))]).T,
+        np.array([np.gradient(features[:, ImuCol.YACCEL])]).T,
+        np.array([np.gradient(np.gradient(features[:, ImuCol.YACCEL]))]).T,
+        np.array([np.gradient(features[:, ImuCol.ZACCEL])]).T,
+        np.array([np.gradient(np.gradient(features[:, ImuCol.ZACCEL]))]).T
     ))
 
     # Use the lead and lag of each acceleration column as features
-    for i in range(4): # iterate acceleration columns
+    for i in range(features.shape[1]): # iterate acceleration columns
         curr_feature = np.array([features[:, i]]).T
         
         # lead 

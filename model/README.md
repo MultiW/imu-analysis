@@ -15,7 +15,16 @@ Our application performs two tasks:
 
     TODO show example
 
-## Project
+## Using the Code
+Make sure to setup the development environment following instructions [here](../).
+
+To train the model, add the raw IMU data (straight from the sensor) and the labeled steps to ```data/raw``` and configure the paths to the label files in ```src/config.py```. 
+
+Then follow the [notebooks](notebooks/) and uncomment and run the appropriate code to clean, build features, and train the model. Make sure to move the completed model to the appropriate model and edit the ```config.py``` file to use.
+
+To predict with the model, follow the instructions in [4-steps-labeling.ipynb](notebooks/4-steps-labeling.ipynb). Or you can clean, build the features, load the model, and label the steps following the notebook and the code they refer to. TODO: create some python function or file to wrap the whole process to labeling the steps of a raw IMU dataset.
+
+## Project Structure
 The [notebooks](notebooks) show how the "steps labeling" model is built. The code in these notebooks can be run to build the model and analyze the models' performance.
 
 TODO: script to clean data and build model
@@ -86,6 +95,7 @@ Data changes:
 * Used all available data to train the GBM model. Number of datapoints: pole - 421,895, boot - 363,025
 
 ### ```gbm-boot-model-v4.pkl```, ```gbm-pole-model-v4.pkl```
+> Note: The traing and testing pre-processing procedure may not be accurate. The testing data may have been tested on a un-smoothed dataset.
 Training data pre-processing:
 * Model was trained on un-smoothed data
 
@@ -94,6 +104,8 @@ Testing data pre-processing:
 
 Model changes:
 * Use XGBoost instead of GBM
+
+> Below are results of the model. Note that these are model results, but not the final steps labeling results. The model labels whether a datapoint is a step or non-step, it doesn't label the start/end points of each step.
 
 Boot results:
 ```
@@ -198,4 +210,124 @@ Accuracy: 0.980219
     accuracy                           0.98     15166
    macro avg       0.98      0.98      0.98     15166
 weighted avg       0.98      0.98      0.98     15166
+```
+
+### ```gbm-boot-model-v6.pkl```, ```gbm-pole-model-v6.pkl```
+
+New features:
+* 1st and 2nd derivative of the triaxial acceleration features and the lag and lead values of these new features.
+
+Pre-processing:
+* Data was trained and tested on heavily smoothed (low-pass filter) data. Specifically, pole - 8Hz and boot - 3Hz.
+
+Boot results:
+```
+Test boot model:
+Figure 1
+Accuracy: 0.970376
+Confusion Matrix:
+[[5320  147]
+ [ 116 3295]]
+Classification Report:
+              precision    recall  f1-score   support
+
+   Non-steps       0.98      0.97      0.98      5467
+       Steps       0.96      0.97      0.96      3411
+
+    accuracy                           0.97      8878
+   macro avg       0.97      0.97      0.97      8878
+weighted avg       0.97      0.97      0.97      8878
+
+Test 0
+Total steps: 129
+Total steps predicted: 129
+Accurate to within 0 datapoint:
+- Start: 0.558140
+- End: 0.596899
+Accurate to within 1 datapoint:
+- Start: 0.945736
+- End: 0.922481
+Accurate to within 2 datapoint:
+- Start: 0.976744
+- End: 0.945736
+Accurate to within 3 datapoint:
+- Start: 0.976744
+- End: 0.945736
+Accurate to within 4 datapoint:
+- Start: 0.976744
+- End: 0.945736
+
+Test 1
+Total steps: 127
+Total steps predicted: 126
+Accurate to within 0 datapoint:
+- Start: 0.669291
+- End: 0.645669
+Accurate to within 1 datapoint:
+- Start: 0.976378
+- End: 0.913386
+Accurate to within 2 datapoint:
+- Start: 0.976378
+- End: 0.913386
+Accurate to within 3 datapoint:
+- Start: 0.976378
+- End: 0.913386
+Accurate to within 4 datapoint:
+- Start: 0.976378
+- End: 0.913386
+```
+
+Pole results:
+```
+Accuracy: 0.983794
+Confusion Matrix:
+[[5021  109]
+ [ 104 7909]]
+Classification Report:
+              precision    recall  f1-score   support
+
+   Non-steps       0.98      0.98      0.98      5130
+       Steps       0.99      0.99      0.99      8013
+
+    accuracy                           0.98     13143
+   macro avg       0.98      0.98      0.98     13143
+weighted avg       0.98      0.98      0.98     13143
+
+Test 0
+Total steps: 284
+Total steps predicted: 285
+Accurate to within 0 datapoint:
+- Start: 0.721831
+- End: 0.644366
+Accurate to within 1 datapoint:
+- Start: 0.996479
+- End: 0.985915
+Accurate to within 2 datapoint:
+- Start: 1.000000
+- End: 0.992958
+Accurate to within 3 datapoint:
+- Start: 1.000000
+- End: 0.992958
+Accurate to within 4 datapoint:
+- Start: 1.000000
+- End: 0.992958
+
+Test 1
+Total steps: 292
+Total steps predicted: 292
+Accurate to within 0 datapoint:
+- Start: 0.715753
+- End: 0.664384
+Accurate to within 1 datapoint:
+- Start: 1.000000
+- End: 0.989726
+Accurate to within 2 datapoint:
+- Start: 1.000000
+- End: 1.000000
+Accurate to within 3 datapoint:
+- Start: 1.000000
+- End: 1.000000
+Accurate to within 4 datapoint:
+- Start: 1.000000
+- End: 1.000000
 ```
