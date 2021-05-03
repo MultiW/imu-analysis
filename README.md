@@ -1,6 +1,6 @@
 # IMU Data Analysis
 
-An application for IMU sensor data analysis. 
+An application for IMU sensor data analysis. This is the algorithm portion of my capstone team project that I developed. It is currently in development to further improve the algorithm performance and the code structure.
 
 ## Context
 
