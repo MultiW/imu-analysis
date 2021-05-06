@@ -21,7 +21,7 @@ Our application performs two tasks:
 ## Model performance highlights
 The model's best performance is highlighted [here](https://github.com/MultiW/imu-analysis/tree/main/model#gbm-boot-model-v6pkl-gbm-pole-model-v6pkl).
 
-Of note is the steps labeling accuracy. I used the algorithm to label the start/end of all steps on two testing data sets. I then compared it to the actual start/end of all steps, and noted how far away it was from the actual start/end of all steps.
+Of note is the steps labeling accuracy. I ran the algorithm on two testing datasets. I then compared the algorithm's identified steps (start/end points) to the actual steps (labeled by data analysts). I noted how "off" the algorithm's predictions were, i.e. how many data points away was the prediction from the actual step.
 
 ## Using the Code
 Make sure to setup the development environment following instructions [here](../).
