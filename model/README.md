@@ -1,11 +1,14 @@
 # Model
 
-An IMU sensor is turned on and placed on an athlete. While wearing the sensor, an athlete may be performing a ski workout or be resting. Once the sensor is turned off, the data from that session is dumped into CSV files, which are the raw IMU data that we are processing and analyzing. This IMU data thus contains useful ski workout data and garbage data.
+## Data capturing
+An IMU sensor is turned on and placed on an athlete. While wearing the sensor, an athlete will perform their workout, rest, etc. (meaning that the data may contain irrelevant/garbage data). Once the sensor is turned off, the data from that session is dumped into CSV files, and this is the "raw" IMU data that our steps labeling algorithm accepts. 
+
+## Features of our algorithm
 
 Our application performs two tasks:
 1. Identify relevant ski workout data.
 
-    This is necessary for the next step to happen. Since this can easily be done manually, automating this is not a priority.
+    This is necessary for the next step to happen. Since this can easily be done manually, it is not a priority and isn't currently implemented.
 
     TODO show example of raw IMU file
 
@@ -14,6 +17,11 @@ Our application performs two tasks:
     Specifically, we are interested in labeling the start and end of every step. For sensors placed on boots, we are interested in labeling when the boot leaves the ground (step start) and when it lands (step end). For sensors placed on poles, we are interested in labeling when the pole hits the ground (step start) and when it leaves the ground (step end).
 
     TODO show example
+
+## Model performance highlights
+The model's best performance is highlighted [here](https://github.com/MultiW/imu-analysis/tree/main/model#gbm-boot-model-v6pkl-gbm-pole-model-v6pkl).
+
+Of note is the steps labeling accuracy. I used the algorithm to label the start/end of all steps on two testing data sets. I then compared it to the actual start/end of all steps, and noted how far away it was from the actual start/end of all steps.
 
 ## Using the Code
 Make sure to setup the development environment following instructions [here](../).
