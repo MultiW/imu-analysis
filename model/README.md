@@ -230,8 +230,9 @@ Pre-processing:
 
 Boot results:
 ```
-Test boot model:
-Figure 1
+========================
+=== ML model results ===
+========================
 Accuracy: 0.970376
 Confusion Matrix:
 [[5320  147]
@@ -246,6 +247,9 @@ Classification Report:
    macro avg       0.97      0.97      0.97      8878
 weighted avg       0.97      0.97      0.97      8878
 
+========================================
+=== Steps labeling algorithm results ===
+========================================
 Test 0
 Total steps: 129
 Total steps predicted: 129
@@ -287,6 +291,9 @@ Accurate to within 4 datapoint:
 
 Pole results:
 ```
+========================
+=== ML model results ===
+========================
 Accuracy: 0.983794
 Confusion Matrix:
 [[5021  109]
@@ -301,6 +308,11 @@ Classification Report:
    macro avg       0.98      0.98      0.98     13143
 weighted avg       0.98      0.98      0.98     13143
 
+========================================
+=== Steps labeling algorithm results ===
+========================================
+Test boot model:
+Figure 1
 Test 0
 Total steps: 284
 Total steps predicted: 285
